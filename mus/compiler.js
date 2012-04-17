@@ -26,7 +26,7 @@ var compile = (function () {
 	"use strict";
 	var result;
 
-    function compileT(expr, time) {
+	function compileT(expr, time) {
 		var len = 0, old_length, section, section_length, i, j;
 		switch (expr.tag) {
 		case 'note':
@@ -69,7 +69,7 @@ var compile = (function () {
 		default:
 			throw "Unsupported tag: '" + expr.tag + "'!";
 		}
-    }
+	}
 
 	function sortNotes(a, b) {
 		return a.start - b.start;
