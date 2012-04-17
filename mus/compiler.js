@@ -1,21 +1,26 @@
 //Adrian Lebioda
 
-var _pitches = {
-	c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11
-};
-
-function convertPitch(pitch)
-{
-	var octave = + pitch[1];
-	var letterPitch = _pitches[pitch[0].toLowerCase()];
+var convertPitch = function(){
+	var pitches = {
+		c: 12, d: 14, e: 16, f: 17, g: 19, a: 21, b: 23
+	};
 	
-	return 12 + 12 * octave + letterPitch;
-}
+	function convertPitch(pitch)
+	{
+		var octave = parseInt(pitch[1]);
+		var letterPitch = pitches[pitch[0].toLowerCase()];
+		
+		return 12 * octave + letterPitch;
+	}
+	
+	return convertPitch;
+}();
 
-function compile (musexpr) {
-    var result = [];
-    
-    function compileT(expr, time) {		
+var compile = function() {   
+	var result;
+
+    function compileT(expr, time) {
+		var len = 0;
 		switch(expr.tag) {
 			case 'note':
 				result.push({
@@ -29,7 +34,7 @@ function compile (musexpr) {
 			case 'rest':
 				return expr.duration;
 			case 'seq':
-				var len = compileT(expr.left, time);
+				len = compileT(expr.left, time);
 				len += compileT(expr.right, time + len);
 				
 				return len;
@@ -38,7 +43,7 @@ function compile (musexpr) {
 								compileT(expr.right, time));
 			case 'repeat':
 				var old_length = result.length;
-				var len = compileT(expr.section, time);
+				len = compileT(expr.section, time);
 				var section = result.slice(old_length);
 				var section_length = section.length;
 				
@@ -61,14 +66,21 @@ function compile (musexpr) {
         return 0;
     }
     
-    compileT(musexpr, 0);
-    
-	result.sort(function(a, b) {
+	function sortNotes(a, b) {
 		return a.start - b.start;
-	});
+	}
 	
-    return result;
-};
+	function compile(musexpr) {
+		result = [];
+		compileT(musexpr, 0);
+		
+		result.sort(sortNotes);
+		
+		return result;
+	}
+	
+	return compile;
+}();
 
 var melody_mus = 
 	{ tag: 'seq',
@@ -95,3 +107,4 @@ var melody_mus =
 
 console.log(melody_mus);
 console.log(compile(melody_mus));
+
