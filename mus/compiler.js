@@ -87,29 +87,5 @@ var compile = (function () {
 	return compile;
 }());
 
-var melody_mus =
-	{ tag: 'seq',
-		left: { tag: 'rest', duration: 150 },
-		right:
-		{ tag: 'par',
-			left:
-			{ tag: 'seq',
-				left:
-				{ tag: 'seq',
-					left: { tag: 'note', pitch: 'a4', dur: 250 },
-					right: { tag: 'note', pitch: 'b4', dur: 250 } },
-				right:
-				{ tag: 'seq',
-					left: { tag: 'note', pitch: 'c4', dur: 500 },
-					right: { tag: 'note', pitch: 'd4', dur: 500 } } },
-			right:
-			{ tag: 'repeat',
-				section:
-				{ tag: 'seq',
-					left: { tag: 'note', pitch: 'a1', dur: 90 },
-					right: { tag: 'note', pitch: 'b1', dur: 100 } },
-				count: 3 }}};
-
-console.log(melody_mus);
-console.log(compile(melody_mus));
-
+exports.convertPitch = convertPitch;
+exports.compile = compile;

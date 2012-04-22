@@ -1,0 +1,72 @@
+{ var default_duration; }
+start = duration
+
+expression =
+    ws? e:( noteexpr / sequence / repeat / duration ) ws?
+    { return e; }
+
+doubleExpression =
+    first:expression rest:expression+
+    { return [first].concat(rest); }
+
+duration =
+    openTag "d" durationNumber e:expression closeTag
+    { return e; }
+
+repeat =
+    openTag "r" n:number e:expression closeTag
+    { return { tag: 'repeat', section: e, count: n}; }
+
+sequence =
+    openTag s:sequenceOpen e:doubleExpression closeTag {
+        var len = e.length - 1, current = 1, result = { tag: s, left: e[0], right: null }, target = result;
+        while(current < len) {
+            target.right = { tag: s, left: e[current++], right: null };
+            target = target.right; 
+        }
+      
+        target.right = e[current];       
+
+        return result; 
+    }
+
+functor =
+    openTag o:operator ws n:number closeTag
+    { return eval(""+default_duration+o+n); } 
+  / openTag n:number ws o:operator closeTag
+    { return eval(""+n+o+default_duration); }
+
+restexpr =
+    "r"
+    { return { tag: 'rest', duration: default_duration }; }
+  / openTag "r" ws d:(number / functor) closeTag
+    { return { tag: 'rest', duration: d }; }
+
+noteexpr =
+    n:note
+    { return { tag: 'note', pitch: n, dur: default_duration }; }
+  / openTag n:note ws d:(number / functor) closeTag
+    { return { tag: 'note', pitch: n, dur: d }; }
+  / restexpr
+
+note =
+    f:[a-g] s:[0-9]
+    { return f + s; }
+
+durationNumber =
+    n:number
+    { default_duration = n; }
+
+sequenceOpen =
+    "s" { return 'seq'; }
+  / "p" { return 'par'; } 
+
+number = 
+    n:[0-9]+
+    { return parseInt(n.join(""), 10); } 
+
+ws = whitespace+
+whitespace = [ \n\t]
+openTag = "(" ws?
+closeTag = ")" ws?
+operator = [+\-*\/]
