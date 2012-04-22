@@ -19,9 +19,9 @@ quote =
 	{ return ["quote", e] }
 	
 ws = (comment / whitespace)+
-whitespace = [ \n\t]
+whitespace = [ \n\t\r]
 comment =
-	";;" [^\n]*
+	";;" [^\n\r]*
 	{ return ""; }
 
 validchar = [0-9a-zA-Z_?!+-=@#$%^&*/.]
