@@ -1,0 +1,27 @@
+start = 
+	e:expression+
+	{ return (e.length === 1) ? e[0] : e; }
+
+expression =
+	ws? e:( atom / expressionlist / quote ) ws?
+	{ return e; }
+	
+atom = 
+    chars:validchar+
+    { return chars.join(""); }
+
+expressionlist =
+	"(" e:expression+ ")"
+	{ return e; }
+
+quote =
+	"'" e:expression
+	{ return ["quote", e] }
+	
+ws = (comment / whitespace)+
+whitespace = [ \n\t]
+comment =
+	";;" [^\n]*
+	{ return ""; }
+
+validchar = [0-9a-zA-Z_?!+-=@#$%^&*/.]
