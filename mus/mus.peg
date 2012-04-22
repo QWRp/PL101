@@ -1,24 +1,49 @@
-{ var default_duration; }
-start = duration
+{ 
+    var default_duration = -1, duration_stack = [], last_offset = undefined;
+    function setDuration(n, offset) {
+        if(Math.abs(last_offset - offset) < 3) return;
+        
+        duration_stack.push(default_duration);
+        default_duration = n;
+        
+        last_offset = offset;
+    }
+
+    function revertDuration() {
+        if(duration_stack.length > 0) {
+            default_duration = duration_stack.pop();
+        } else {
+            default_duration = -1;
+        }
+    } 
+}
+start = expression
 
 expression =
-    ws? e:( noteexpr / sequence / repeat / duration ) ws?
+    ws? e:( noteexpr / sequence / repeat / default ) ws?
     { return e; }
 
 doubleExpression =
     first:expression rest:expression+
     { return [first].concat(rest); }
 
-duration =
-    openTag "d" durationNumber e:expression closeTag
-    { return e; }
-
 repeat =
-    openTag "r" n:number e:expression closeTag
+    openTag "r" ws? n:number e:expression closeTag
     { return { tag: 'repeat', section: e, count: n}; }
+
+default =
+    openTag "d" ws? n:defaultNumber e:expression closeTag {
+        revertDuration();
+        return e; 
+    }
 
 sequence =
     openTag s:sequenceOpen e:doubleExpression closeTag {
+        if (s === 'def') {
+           revertDuration();
+           s = 'seq';
+        }
+
         var len = e.length - 1, current = 1, result = { tag: s, left: e[0], right: null }, target = result;
         while(current < len) {
             target.right = { tag: s, left: e[current++], right: null };
@@ -37,29 +62,34 @@ functor =
     { return eval(""+n+o+default_duration); }
 
 restexpr =
-    "r"
+    "r" &{ return default_duration !== -1; }
     { return { tag: 'rest', duration: default_duration }; }
   / openTag "r" ws d:(number / functor) closeTag
     { return { tag: 'rest', duration: d }; }
 
 noteexpr =
-    n:note
+    n:note &{ return default_duration !== -1; }
     { return { tag: 'note', pitch: n, dur: default_duration }; }
   / openTag n:note ws d:(number / functor) closeTag
     { return { tag: 'note', pitch: n, dur: d }; }
   / restexpr
 
+defaultNumber =
+    n:(number / functor) 
+    { setDuration(n, offset); return n; }
+
 note =
     f:[a-g] s:[0-9]
     { return f + s; }
 
-durationNumber =
-    n:number
-    { default_duration = n; }
-
 sequenceOpen =
     "s" { return 'seq'; }
-  / "p" { return 'par'; } 
+  / "p" { return 'par'; }
+  / "d" ws? n:number {
+        setDuration(n, offset);
+
+        return 'def';
+    } 
 
 number = 
     n:[0-9]+
