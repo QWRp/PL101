@@ -85,9 +85,7 @@ note =
 sequenceOpen =
     "s" { return 'seq'; }
   / "p" { return 'par'; }
-  / "d" ws? n:number {
-        setDuration(n, offset);
-
+  / "d" ws? n:defaultNumber {
         return 'def';
     } 
 

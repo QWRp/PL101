@@ -18,6 +18,7 @@ fs.readFile('mus.peg', 'ascii', function(err, data) {
 	test("(d250 (p c1 c2 (c3 (800 /))))", [ n('c1', 0, 250), n('c2', 0, 250), n('c3', 0, 3.2) ] );
 	test("(d100 (s c1 (d250 (s f1 (d350 a1)))))", [ n('c1', 0, 100), n('f1', 100, 250), n('a1', 350, 350) ]);
 	test("(d150 (d50 c1) c2)", [ n('c1', 0, 50), n('c2', 50, 150) ]);
+	test("(d150 (d (* 2) a1) a2)", [ n('a1', 0, 300), n('a2', 300, 150) ]);
 	/* TESTS END */
 	
 	console.log("Testing finished");
