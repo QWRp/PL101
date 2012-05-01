@@ -1,17 +1,26 @@
 start = 
-	e:expression+
-	{ return (e.length === 1) ? e[0] : e; }
+    implicitbegin / expression
+
+implicitbegin =
+    e1:expression e2:expression+
+    { return ['begin'].concat([e1]).concat(e2); }
 
 expression =
 	ws? e:( atom / expressionlist / quote ) ws?
 	{ return e; }
 	
-atom = 
-    chars:validchar+
+atom =
+    "#t"
+    { return true; }
+  / "#f"
+    { return false; }
+  / n:numbers+ e:("." numbers+)?
+    { var k = e[1] || []; return parseFloat(n.join("") + "." + k.join("")); }
+  / chars:validchar+
     { return chars.join(""); }
 
 expressionlist =
-	"(" e:expression+ ")"
+	"(" e:expression* ")"
 	{ return e; }
 
 quote =
@@ -24,4 +33,6 @@ comment =
 	";;" [^\n\r]*
 	{ return ""; }
 
-validchar = [0-9a-zA-Z_?!+-=@#$%^&*/.]
+chars = [a-zA-Z_?!+-=@#$%^&*/.<>]
+numbers = [0-9]
+validchar = chars / numbers

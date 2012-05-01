@@ -39,7 +39,45 @@ suite('Parser', function () {
         test('parse (+ x 3)', function () {
             assert.deepEqual(
                 parse('(+ x 3)'),
-                ['+', 'x', '3']
+                ['+', 'x', 3]
+            );
+        });
+        test("parse quote '(1 2.1 3)", function () {
+            assert.deepEqual(
+                parse("'(1 2.1 3)"),
+                ['quote', [1, 2.1, 3]]
+            );
+        });
+        test('parse empty list', function () {
+            assert.deepEqual(
+                parse('()'),
+                []
+            );
+        });
+        test('parse #t', function () {
+            assert.deepEqual(
+                parse('#t'),
+                true
+            );
+        });
+        test('parse #f', function () {
+            assert.deepEqual(
+                parse('#f'),
+                false
+            );
+        });
+    });
+    suite('complex expressions', function () {
+        test('expression and comment', function () {
+            assert.deepEqual(
+                parse(";;Comment\n(1 2 3);;Comment"),
+                [1, 2, 3]
+            );
+        });
+        test('complex expression with whitespaces', function () {
+            assert.deepEqual(
+                parse("(begin \n\t(define s 10)\n\t(if (> s 5) (set! s 5) (set! s 0)))"),
+                ['begin', ['define', 's', 10], ['if', ['>', 's', 5], ['set!', 's', 5], ['set!', 's', 0]]]
             );
         });
     });
