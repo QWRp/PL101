@@ -156,7 +156,20 @@ var scheem = {
     }()),
 
     evalString : function (string) {
-        return evalScheem(parse(string));
+        var parsed, result;
+        try {
+            parsed = parse(string);
+        } catch (exc) {
+            throw { msg: '' + exc, type: 'Parsing error' };
+        }
+
+        try {
+            result = this.evalScheem(parsed);
+        } catch (exc) {
+            throw { msg: exc, type: 'Evaluation error' };
+        }
+
+        return result;
     }
 }
 
