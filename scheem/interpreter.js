@@ -140,7 +140,7 @@ var scheem = {
                 ret_result = fun[0](expr, env);
 				
 				if (expr[0] === 'quote') {
-					trace.children.push({ expr: ret_result, value: ret_result, env: env.dumpNames(), children: []});
+					current.children.push({ expr: ret_result, value: ret_result, env: env.dumpNames(), children: []});
 				}
             } else if (typeof expr === 'string') {
                 ret_result = env.resolveName(expr);
