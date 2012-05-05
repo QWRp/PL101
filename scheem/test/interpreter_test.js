@@ -420,11 +420,17 @@ suite('Interpreter', function () {
         });
     });
 });
-suite('evalString', function () {
+suite('trace', function () {
     test('with a single number', function () {
         assert.deepEqual(
-            evalString("5.5"),
-            5.5
+            scheem.evalString("5", true),
+            { expr: 5, env: {}, value: 5, children: [] }
+        );
+    });
+    test('addition', function () {
+        assert.deepEqual(
+            scheem.evalString("(+ 1 2)", true),
+            { expr: ['+', 1, 2], env: {}, value: 3, children: [ { expr: 1, env: {}, value: 1, children: [] }, {expr: 2, env: {}, value: 2, children: []} ] }
         );
     });
 });

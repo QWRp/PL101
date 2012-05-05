@@ -116,7 +116,60 @@ var scheem = {
         return evalScheem;
     }()),
 
-    evalString:function (string) {
+    /* Very slow... */
+    traceScheem:(function () {
+        "use strict";
+
+        function traceExpr(expr, env) {
+            var parent = env.trace_tree,
+                current = { 'expr': expr, 'children': [], 'env': env.dumpNames() },
+                ret_result;
+
+            parent.children.push(current);
+            env.trace_tree = current;
+
+            if (Array.isArray(expr)) {
+                var fun = env.function_lookup[expr[0]];
+                if (fun === undefined) {
+                    throw "Unknown function '" + expr[0] + "'!";
+                }
+                if (fun[1] !== undefined) {
+                    scheem.validateParamsNum[fun[1][0]](expr, fun[1][1]);
+                    /* no minmax support! to lazy... */
+                }
+                ret_result = fun[0](expr, env);
+            } else if (typeof expr === 'string') {
+                ret_result = env.resolveName(expr);
+            } else {
+                ret_result = expr;
+            }
+
+            current.value = ret_result;
+            env.trace_tree = parent;
+
+            return ret_result;
+        }
+
+        function traceScheem(expr, env) {
+            if (!(env instanceof scheem.Environment)) {
+                env = new scheem.Environment(env, traceExpr);
+            } else {
+                env.evalFunc = traceExpr;
+            }
+
+            env.trace_tree = { children: [] };
+
+            traceExpr(expr, env);
+
+            return env.trace_tree.children[0];
+        }
+
+        return traceScheem;
+    }()),
+
+    evalString:function (string, trace) {
+        "use strict";
+
         var parsed, result;
         try {
             parsed = parse(string);
@@ -125,7 +178,12 @@ var scheem = {
         }
 
         try {
-            result = this.evalScheem(parsed);
+            if(trace === true){
+                result = this.traceScheem(parsed);
+            }
+            else {
+                result = this.evalScheem(parsed);
+            }
         } catch (exc) {
             throw { msg:exc, type:'Evaluation error' };
         }
@@ -176,6 +234,15 @@ scheem.Environment.prototype = {
     popNames:function () {
         this.names_depth--;
         this.name_lookup.pop();
+    },
+    dumpNames:function () {
+        var names_dump = {};
+        for(var i = 0; i <= this.names_depth; i++) {
+            for(var name in this.name_lookup[i]) {
+                names_dump[name] = this.name_lookup[i][name];
+            }
+        }
+        return names_dump;
     },
     function_lookup:{
         /* Arithmetic */
