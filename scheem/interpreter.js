@@ -120,6 +120,34 @@ var scheem = {
     traceScheem:(function () {
         "use strict";
 
+		function traceQuote(expr, env) {
+			var parent = env.trace_tree,
+                current = { 'expr': expr, 'children': [], 'env': env.dumpNames() },
+                ret_result;
+
+            parent.children.push(current);
+            env.trace_tree = current;
+			
+			var env_dump = env.dumpNames();
+			
+			for(var i = 0; i < expr.length; i++) {
+				if (Array.isArray(expr[i])) {
+					traceQuote(expr[i], env);
+				} else if(typeof expr[i] === 'string') {
+					if (env.isNameDefined(expr[i])) {
+						current.children.push({ expr: expr[i], value: env.resolveName(expr[i]), env: env_dump, children: [] });
+					} else {
+						current.children.push({ expr: expr[i], value: null, env: env_dump, children: [] });
+					}
+				} else {
+					current.children.push({ expr: expr[i], value: expr[i], env: env_dump, children: [] });
+				}
+			}
+			
+			current.value = expr;
+            env.trace_tree = parent;
+		}
+		
         function traceExpr(expr, env) {
             var parent = env.trace_tree,
                 current = { 'expr': expr, 'children': [], 'env': env.dumpNames() },
@@ -140,7 +168,9 @@ var scheem = {
                 ret_result = fun[0](expr, env);
 				
 				if (expr[0] === 'quote') {
-					current.children.push({ expr: ret_result, value: ret_result, env: env.dumpNames(), children: []});
+					traceQuote(ret_result, env);
+				} else if(expr[0] === 'define' || expr[0] === 'set!') {
+					current.children.unshift({ expr: expr[1], value: env.resolveName(expr[1]), env: env.dumpNames(), children: [] });
 				}
             } else if (typeof expr === 'string') {
                 ret_result = env.resolveName(expr);
