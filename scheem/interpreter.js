@@ -138,6 +138,10 @@ var scheem = {
                     /* no minmax support! to lazy... */
                 }
                 ret_result = fun[0](expr, env);
+				
+				if (expr[0] === 'quote') {
+					trace.children.push(ret_result);
+				}
             } else if (typeof expr === 'string') {
                 ret_result = env.resolveName(expr);
             } else {
