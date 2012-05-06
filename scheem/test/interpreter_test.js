@@ -414,7 +414,7 @@ suite('Interpreter', function () {
     suite('complex expressions', function () {
         test("(begin (define x '(6 7 8)) (define y 13) (cons y (cdr (cdr x))))", function () {
             assert.deepEqual(
-                evalScheem(["begin", ["define", "x", ["quote", [6, 7, 8]]], ["define", "y", 13], ["cons", "y", ["cdr", ["cdr", "x"]]]], {}),
+                evalScheem(["begin", ["define", "x", ["quote", [6, 7, 8]]], ["define", "y", 13], ["cons", "y", ["cdr", ["cdr", "x"]]]]),
                 [13, 8]
             );
         });
