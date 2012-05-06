@@ -11,8 +11,56 @@ var scheem = {
     Environment:function (vars, evalFunc) {
         "use strict";
 
-        this.name_lookup = [ (vars || {})];
-        this.names_depth = 0;
+        this.names_depth = 1;
+        this.names_lookup = [{
+            /* Arithmetic */
+            '+':function (x, y) {
+                return scheem.validateParamType.number(x, '+') + scheem.validateParamType.number(y, '+');
+            },
+            '-':function (x, y) {
+                return scheem.validateParamType.number(x, '-') - scheem.validateParamType.number(y, '-');
+            },
+            '*':function (x, y) {
+                return scheem.validateParamType.number(x, '*') * scheem.validateParamType.number(y, '*');
+            },
+            '/':function (x, y) {
+                return scheem.validateParamType.number(x, '/') / scheem.validateParamType.number(y, '/');
+            },
+
+            /* Predicates */
+            '=':function (x, y) {
+                return scheem.validateParamType.number(x, '=') === scheem.validateParamType.number(y, '=');
+            },
+            '>':function (x, y) {
+                return scheem.validateParamType.number(x, '>') > scheem.validateParamType.number(y, '>');
+            },
+            '<':function (x, y) {
+                return scheem.validateParamType.number(x, '<') < scheem.validateParamType.number(y, '<');
+            },
+            '>=':function (x, y) {
+                return scheem.validateParamType.number(x, '>=') >= scheem.validateParamType.number(y, '>=');
+            },
+            '<=':function (x, y) {
+                return scheem.validateParamType.number(x, '<=') <= scheem.validateParamType.number(y, '<=');
+            },
+
+            /* Lists related */
+            'cons':function (value, list) {
+                scheem.validateParamType.array(list, 'cons').unshift(value);
+                return list;
+            },
+            'car':function (list) {
+                scheem.validateParamType.array(list, 'car');
+                if (list.length === 0) {
+                    throw "Can't use 'car' on empty list!";
+                }
+                return list[0];
+            },
+            'cdr':function (list) {
+                scheem.validateParamType.array(list, 'cdr').shift();
+                return list;
+            }
+        }, vars || {}];
 
         this.evalFunc = evalFunc;
     },
@@ -89,7 +137,17 @@ var scheem = {
             if (Array.isArray(expr)) {
                 var fun = env.function_lookup[expr[0]];
                 if (fun === undefined) {
-                    throw "Unknown function '" + expr[0] + "'!";
+                    var fn = evalExpr(expr[0], env),
+                        params_count = fn.length, params;
+
+                    scheem.validateParamsNum.exact(expr, params_count);
+
+                    params = expr.slice(1);
+                    for (var i = 0; i < params_count; i++) {
+                        params[i] = evalExpr(params[i], env);
+                    }
+
+                    return fn.apply(this, params);
                 }
                 if (fun[1] !== undefined) {
                     scheem.validateParamsNum[fun[1][0]](expr, fun[1][1]);
@@ -119,6 +177,25 @@ var scheem = {
     /* Very slow... */
     traceScheem:(function () {
         "use strict";
+
+        function traceValueString(value) {
+            if (Array.isArray(value)) {
+                var string = "(";
+
+                for(var i = 0; i < value.length; i++) {
+                    string += traceValueString(value[i]) + " ";
+                }
+
+                string = string.substr(0, string.length - 1) + ")";
+                return string;
+            } else if (typeof value == 'boolean') {
+                return (value) ? '#t' : '#f';
+            } else if (typeof value === 'function') {
+                return '(function)';
+            } else {
+                return "" + value;
+            }
+        }
 
 		function traceQuote(expr, env) {
 			var parent = env.trace_tree,
@@ -159,26 +236,59 @@ var scheem = {
             if (Array.isArray(expr)) {
                 var fun = env.function_lookup[expr[0]];
                 if (fun === undefined) {
-                    throw "Unknown function '" + expr[0] + "'!";
+                    var fn = traceExpr(expr[0], env),
+                        params_count = fn.length, params;
+
+                    current.string = "(" + current.children[0].string;
+                    current.children.shift();
+
+                    scheem.validateParamsNum.exact(expr, params_count);
+
+                    params = expr.slice(1);
+                    for (var i = 0; i < params_count; i++) {
+                        params[i] = traceExpr(params[i], env);
+                        current.string += " " + current.children[i].string;
+                    }
+
+                    current.string += ")";
+
+                    ret_result = fn.apply(this, params);
+                } else {
+                    if (fun[1] !== undefined) {
+                        scheem.validateParamsNum[fun[1][0]](expr, fun[1][1]);
+                        /* no minmax support! to lazy... */
+                    }
+                    ret_result = fun[0](expr, env);
+
+                    if (expr[0] === 'quote') {
+                        traceQuote(ret_result, env);
+                    } else if(expr[0] === 'define' || expr[0] === 'set!') {
+                        var val = env.resolveName(expr[1]);
+                        current.children.unshift({ expr: expr[1], value: val, env: env.dumpNames(), children: [], string: expr[1], value_string: traceValueString(val) });
+                    }
+
+                    if (expr[0] === 'quote') {
+                        current.string = "'" + traceValueString(ret_result);
+                    } else {
+                        current.string = "(" + expr[0];
+
+                        for (var i = 0; i < current.children.length; i++) {
+                            current.string += " " + current.children[i].string;
+                        }
+
+                        current.string += ")";
+                    }
                 }
-                if (fun[1] !== undefined) {
-                    scheem.validateParamsNum[fun[1][0]](expr, fun[1][1]);
-                    /* no minmax support! to lazy... */
-                }
-                ret_result = fun[0](expr, env);
-				
-				if (expr[0] === 'quote') {
-					traceQuote(ret_result, env);
-				} else if(expr[0] === 'define' || expr[0] === 'set!') {
-					current.children.unshift({ expr: expr[1], value: env.resolveName(expr[1]), env: env.dumpNames(), children: [] });
-				}
             } else if (typeof expr === 'string') {
                 ret_result = env.resolveName(expr);
+                current.string = expr;
             } else {
                 ret_result = expr;
+                current.string = expr;
             }
 
             current.value = ret_result;
+            current.value_string = traceValueString(ret_result);
             env.trace_tree = parent;
 
             return ret_result;
@@ -229,7 +339,7 @@ var scheem = {
 scheem.Environment.prototype = {
     isNameDefined:function (name) {
         for (var i = this.names_depth; i >= 0; i--) {
-            if (name in this.name_lookup[i]) {
+            if (name in this.names_lookup[i]) {
                 return true;
             }
         }
@@ -238,8 +348,8 @@ scheem.Environment.prototype = {
     },
     resolveName:function (name) {
         for (var i = this.names_depth; i >= 0; i--) {
-            if (name in this.name_lookup[i]) {
-                return this.name_lookup[i][name];
+            if (name in this.names_lookup[i]) {
+                return this.names_lookup[i][name];
             }
         }
 
@@ -247,8 +357,8 @@ scheem.Environment.prototype = {
     },
     setName:function (name, value) {
         for (var i = this.names_depth; i >= 0; i--) {
-            if (name in this.name_lookup[i]) {
-                this.name_lookup[i][name] = value;
+            if (name in this.names_lookup[i]) {
+                this.names_lookup[i][name] = value;
                 return;
             }
         }
@@ -256,80 +366,32 @@ scheem.Environment.prototype = {
         throw "Symbol '" + name + "' is not defined!";
     },
     defineName:function (name, value) {
-        if (name in this.name_lookup[this.names_depth]) {
+        if (name in this.names_lookup[this.names_depth]) {
             throw "Symbol '" + name + "' is already defined!";
         }
-        this.name_lookup[this.names_depth][name] = value;
+        this.names_lookup[this.names_depth][name] = value;
     },
     pushNames:function () {
         this.names_depth++;
-        this.name_lookup.push({});
+        this.names_lookup.push({});
     },
     popNames:function () {
         this.names_depth--;
-        this.name_lookup.pop();
+        this.names_lookup.pop();
     },
     dumpNames:function () {
         var names_dump = {};
-        for(var i = 0; i <= this.names_depth; i++) {
-            for(var name in this.name_lookup[i]) {
-                names_dump[name] = this.name_lookup[i][name];
+        for(var i = 1; i <= this.names_depth; i++) {
+            for(var name in this.names_lookup[i]) {
+                names_dump[name] = this.names_lookup[i][name];
             }
         }
         return names_dump;
     },
     function_lookup:{
-        /* Arithmetic */
-        '+':[function (expr, env) {
-            return scheem.validateParamType.number(env.evalFunc(expr[1], env), expr[0]) + scheem.validateParamType.number(env.evalFunc(expr[2], env), expr[0]);
-        }, ['exact', 2]],
-        '-':[function (expr, env) {
-            return scheem.validateParamType.number(env.evalFunc(expr[1], env), expr[0]) - scheem.validateParamType.number(env.evalFunc(expr[2], env), expr[0]);
-        }, ['exact', 2]],
-        '*':[function (expr, env) {
-            return scheem.validateParamType.number(env.evalFunc(expr[1], env), expr[0]) * scheem.validateParamType.number(env.evalFunc(expr[2], env), expr[0]);
-        }, ['exact', 2]],
-        '/':[function (expr, env) {
-            return scheem.validateParamType.number(env.evalFunc(expr[1], env), expr[0]) / scheem.validateParamType.number(env.evalFunc(expr[2], env), expr[0]);
-        }, ['exact', 2]],
-
-        /* Predicates */
-        '=':[function (expr, env) {
-            return scheem.validateParamType.number(env.evalFunc(expr[1], env), expr[0]) === scheem.validateParamType.number(env.evalFunc(expr[2], env), expr[0]);
-        }, ['exact', 2]],
-        '>':[function (expr, env) {
-            return scheem.validateParamType.number(env.evalFunc(expr[1], env), expr[0]) > scheem.validateParamType.number(env.evalFunc(expr[2], env), expr[0]);
-        }, ['exact', 2]],
-        '<':[function (expr, env) {
-            return scheem.validateParamType.number(env.evalFunc(expr[1], env), expr[0]) < scheem.validateParamType.number(env.evalFunc(expr[2], env), expr[0]);
-        }, ['exact', 2]],
-        '>=':[function (expr, env) {
-            return scheem.validateParamType.number(env.evalFunc(expr[1], env), expr[0]) >= scheem.validateParamType.number(env.evalFunc(expr[2], env), expr[0]);
-        }, ['exact', 2]],
-        '<=':[function (expr, env) {
-            return scheem.validateParamType.number(env.evalFunc(expr[1], env), expr[0]) <= scheem.validateParamType.number(env.evalFunc(expr[2], env), expr[0]);
-        }, ['exact', 2]],
-
         /* Lists related */
         'quote':[function (expr, env) {
             return expr[1];
-        }, ['exact', 1]],
-        'cons':[function (expr, env) {
-            var list = scheem.validateParamType.array(env.evalFunc(expr[2], env), expr[0]);
-            list.unshift(env.evalFunc(expr[1], env));
-            return list;
-        }, ['exact', 2]],
-        'car':[function (expr, env) {
-            var list = scheem.validateParamType.array(env.evalFunc(expr[1], env), expr[0]);
-            if (list.length === 0) {
-                throw "Can't use 'car' on empty list!";
-            }
-            return list[0];
-        }, ['exact', 1]],
-        'cdr':[function (expr, env) {
-            var list = scheem.validateParamType.array(env.evalFunc(expr[1], env), expr[0]);
-            list.shift();
-            return list;
         }, ['exact', 1]],
 
         /* Variable manipulation */
