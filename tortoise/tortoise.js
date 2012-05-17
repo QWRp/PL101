@@ -67,7 +67,7 @@ Turtle.prototype = {
 
         this.angle -= ang;
         this.updateTurtle();
-    }
+    },
 };
 
 function create_basic_environment(turtle) {
@@ -79,7 +79,10 @@ function create_basic_environment(turtle) {
         forward: function (d) { turtle.forward(d); },
         backward: function (d) { turtle.forward(-d); },
         left: function (d) { turtle.right(-d); },
-        right: function (d) { turtle.right(d); }
+        right: function (d) { turtle.right(d); },
+        penup: function () { turtle.pen = false; },
+        pendown: function () { turtle.pen = true; },
+        log: log_console
     };
 
     return { bindings: {}, outer: env };

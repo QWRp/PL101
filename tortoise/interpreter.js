@@ -37,9 +37,9 @@ function lookup(env, name) {
     throw "Variable '" + name + "' is not defined!";
 }
 
-function expand_bindings(env) {
+function expand_bindings(env, in_func) {
     "use strict";
-    return { bindings: {}, outer: env };
+    return { bindings: {}, outer: env, in_function: in_func };
 }
 
 function evalExpr(expr, env) {
@@ -53,6 +53,11 @@ function evalExpr(expr, env) {
     switch (expr.tag) {
     case 'call':
         left = lookup(env, expr.name);
+
+        if (expr.args.length !== left.length) {
+            throw "Function '" + expr.name + "' expects " + left.length + " arguments, " + expr.args.length + " given.";
+        }
+
         return left.apply(null, expr.args.map(function (arg) {
             return evalExpr(arg, env);
         }));
@@ -80,6 +85,20 @@ function evalExpr(expr, env) {
         return evalExpr(expr.left, env) * evalExpr(expr.right, env);
     case '/':
         return evalExpr(expr.left, env) / evalExpr(expr.right, env);
+    /* Logic operators */
+    case '&&':
+        return evalExpr(expr.left, env) && evalExpr(expr.right, env);
+    case '||':
+        return evalExpr(expr.left, env) || evalExpr(expr.right, env);
+    case '!':
+        return !evalExpr(expr.expr, env);
+    case '?:':
+        left = evalExpr(expr.expr, env);
+        if (left) {
+            return evalExpr(expr.left, env);
+        } else {
+            return evalExpr(expr.right, env);
+        }
     }
 
     throw "Bad expression: " + expr;
@@ -91,6 +110,9 @@ function evalStatements(seq, env) {
     var i, val, seq_len = seq.length;
     for (i = 0; i < seq_len; i++) {
         val = evalStatement(seq[i], env);
+        if (env.stop === true) {
+            return val;
+        }
     }
     return val;
 }
@@ -104,9 +126,10 @@ function evalStatement(stmt, env) {
     case 'ignore':
         return evalExpr(stmt.body, env);
     case 'var':
-        times = stmt.names.length;
+        times = stmt.vars.length;
         for (i = 0; i < times; i++) {
-            add_binding(env, stmt.names[i], 0);
+            val = stmt.vars[i];
+            add_binding(env, val.name, evalExpr(val.expr, env));
         }
         return 0;
     case ':=':
@@ -121,6 +144,8 @@ function evalStatement(stmt, env) {
 
         if (val) {
             return evalStatements(stmt.body, env);
+        } else if (stmt.else_body !== undefined) {
+            return evalStatements(stmt.else_body, env);
         }
         return undefined;
     case 'repeat':
@@ -133,12 +158,32 @@ function evalStatement(stmt, env) {
             val = evalStatements(stmt.body, env);
         }
         return val;
+    case 'while':
+        do {
+            times = evalExpr(stmt.expr, env);
+            if (typeof times !== 'boolean') {
+                throw "Expected boolen in 'while' condition!";
+            }
+
+            if (times) {
+                val = evalStatements(stmt.body, env);
+            }
+        } while (times);
+        return val;
     case 'define':
-        val = eval("function " + stmt.name + "(" + stmt.args.join(",") + ") { var new_env = expand_bindings(env); " + stmt.args.map(function (arg) {
+        val = eval("function " + stmt.name + "(" + stmt.args.join(",") + ") { var new_env = expand_bindings(env, true); " + stmt.args.map(function (arg) {
             return "add_binding(new_env, '" + arg + "', " + arg + ");";
         }).join("") + " return evalStatements(stmt.body, new_env);} " + stmt.name + ";");
         add_binding(env, stmt.name, val);
         return 0;
+    case 'return':
+        if (env.in_function === undefined) {
+            throw "'return' statement must be called inside function!";
+        }
+
+        env.stop = true;
+
+        return evalExpr(stmt.expr, env);
     }
 
     throw "Unknown statement '" + stmt.tag + "'!";

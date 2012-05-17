@@ -53,8 +53,8 @@ suite('evalExpression', function () {
 
 suite('evalStatement', function () {
     var env = { bindings:
-    {x: 5, y: 24, f: function(a) { return 3 * a + 1; } },
-        outer: { bindings: {x: 3, z: 101}, outer: { } } };
+    {x: 5, y: 24, f: function(a) { return 3 * a + 1; }, i : 5 },
+        outer: { bindings: {x: 3, z: 101}, outer: null } };
     test('x;', function () {
         var stmt = parse('x;', 'statement');
         assert.deepEqual(evalStatement(stmt, env), 5);
@@ -96,10 +96,24 @@ suite('evalStatement', function () {
         assert.deepEqual(evalStatement(stmt, env), undefined);
         assert.notDeepEqual(lookup(env, 'x'), 77);
     });
+    test('simple else', function () {
+        var stmt = parse('if(2 < 1) { x := 77; } else { x := 55; }', 'statement');
+        assert.deepEqual(evalStatement(stmt, env), 55);
+        assert.deepEqual(lookup(env, 'x'), 55);
+    });
+    test('while', function () {
+        var stmt = parse('while (i > 0) { i := i - 1; }', 'statement');
+        assert.deepEqual(evalStatement(stmt, env), 0);
+        assert.deepEqual(lookup(env, 'i'), 0);
+    });
     test('simple define', function () {
         var stmt = parse('define g(a) { x:=a; } g(-3);', 'statements');
         assert.deepEqual(evalStatements(stmt, env), -3);
         assert.deepEqual(lookup(env, 'x'), -3);
+    });
+    test('factorial', function () {
+        var stmt = parse('define fac(n) { if (n > 0) { n * fac(n - 1); } else { 1; } } fac(5);');
+        assert.deepEqual(evalStatements(stmt, env), 120);
     });
 });
 

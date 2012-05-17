@@ -2,7 +2,7 @@ start
   = statements
 
 expression
-  = expr:comparative
+  = expr:logic
     { return expr; }
 
 statements
@@ -15,12 +15,16 @@ statement
     { return { tag:"define", name:v, args:[], body:body }; }
   / "define" ws v:identifier ws "(" ws args:ident_list ws ")" ws "{" ws body:statements "}" ws
     { return { tag:"define", name:v, args:args, body:body }; }
-  / "var" ws v:ident_list ws ";" ws
-    { return { tag:"var", names:v }; }
-  / "repeat" ws "(" ws e:expression ws ")" ws "{" ws body:statements "}" ws
-    { return { tag:"repeat", expr:e, body:body }; }
-  / "if" ws "(" ws e:expression ws ")" ws "{" ws body:statements "}" ws
-    { return { tag:"if", expr:e, body:body }; }
+  / "var" ws v:vars_list ws ";" ws
+    { return { tag:"var", vars:v }; }
+  / "if" ws "(" ws e:expression ws ")" ws "{" ws body:statements "}" ws "else" ws "{" ws else_body:statements "}" ws
+    { return { tag:"if", expr:e, body:body, else_body:else_body }; }
+  / type:("repeat" / "while" / "if") ws "(" ws e:expression ws ")" ws "{" ws body:statements "}" ws
+    { return { tag:type, expr:e, body:body }; }
+  / "return" ws ";" ws
+    { return { tag:"return", expr:0 }; }
+  / "return" ws e:expression ws ";" ws
+    { return { tag:"return", expr:e }; }
   / expr:expression ws ";" ws
     { return { tag:"ignore", body:expr }; }
 
@@ -31,6 +35,27 @@ comma_identifier
 ident_list
   = first:identifier rest:comma_identifier*
     { return [first].concat(rest); }
+
+variable
+  = v:identifier ws ":=" ws e:expression
+    { return { name: v, expr: e }; }
+  / v:identifier
+    { return { name: v, expr: 0 }; }
+
+comma_variables
+  = "," ws v:variable
+    { return v; }
+
+vars_list
+  = first:variable rest:comma_variables*
+    { return [first].concat(rest); }
+
+logic_op = "&&" / "||"
+
+logic
+  = left:comparative ws op:logic_op ws right:logic
+    { return { tag:op, left:left, right:right }; }
+    / comparative 
 
 comp_op = "<=" / ">=" / "!=" / "==" / "<" / ">"
 
@@ -46,15 +71,21 @@ additive
     { return { tag:op, left:left, right:right }; }
   / multiplicative
 
-mult_op = "*" / "/"
+mult_op = "*" / "/" / "%"
 
 multiplicative
   = left:primary ws op:mult_op ws right:multiplicative 
     { return { tag:op, left:left, right:right }; }
+  / negation
+
+negation
+  = "!" ws e:expression
+  { return { tag:"!", expr:e }; }
   / primary
 
 primary
   = number
+  / color
   / v:identifier "(" ws ")"
     { return { tag:"call", name:v, args:[] }; }
   / v:identifier "(" ws args:arglist ws ")"
@@ -63,6 +94,10 @@ primary
     { return { tag:'ident', name:v }; }
   / "(" ws expr:expression ws ")" 
     { return expr; }
+
+color
+  = "#" c:[a-fA-F0-9]+ &{ var l = c.length; return (l === 3 || l === 6); }
+    { return "#" + c.join(""); }
 
 comma_expression 
   = "," ws expr:expression

@@ -116,7 +116,7 @@ suite('parse', function() {
             [
                 {
                     "tag": "var",
-                    "names": ["x"]
+                    "vars": [ {name:"x", expr:0} ]
                 },
                 {
                     "tag": ":=",
@@ -153,6 +153,17 @@ suite('parse', function() {
                 }
             ];
         assert.deepEqual(parse(txt, 'statements'), res);
+    });
+    test('while', function () {
+        var txt = "while (5) {}";
+        var res =
+            [
+                {
+                    tag: "while",
+                    expr: 5,
+                    body: []
+                }
+            ];
     });
     test('spiral example', function() {
         var txt = (
@@ -209,7 +220,7 @@ suite('parse', function() {
                         },
                         {
                             "tag": "var",
-                            "names": ["newsize"]
+                            "vars": [{name:"newsize", expr:0}]
                         },
                         {
                             "tag": ":=",
