@@ -1,0 +1,96 @@
+start
+  = statements
+
+expression
+  = expr:comparative
+    { return expr; }
+
+statements
+  = statement*
+
+statement
+  = v:identifier ws ":=" ws expr:expression ws ";" ws
+    { return { tag:":=", left: v, right: expr }; }
+  / "define" ws v:identifier ws "(" ws ")" ws "{" ws body:statements "}" ws
+    { return { tag:"define", name:v, args:[], body:body }; }
+  / "define" ws v:identifier ws "(" ws args:ident_list ws ")" ws "{" ws body:statements "}" ws
+    { return { tag:"define", name:v, args:args, body:body }; }
+  / "var" ws v:ident_list ws ";" ws
+    { return { tag:"var", names:v }; }
+  / "repeat" ws "(" ws e:expression ws ")" ws "{" ws body:statements "}" ws
+    { return { tag:"repeat", expr:e, body:body }; }
+  / "if" ws "(" ws e:expression ws ")" ws "{" ws body:statements "}" ws
+    { return { tag:"if", expr:e, body:body }; }
+  / expr:expression ws ";" ws
+    { return { tag:"ignore", body:expr }; }
+
+comma_identifier
+  = "," ws v:identifier
+    { return v; }
+
+ident_list
+  = first:identifier rest:comma_identifier*
+    { return [first].concat(rest); }
+
+comp_op = "<=" / ">=" / "!=" / "==" / "<" / ">"
+
+comparative
+  = left:additive ws op:comp_op ws right:comparative
+    { return { tag:op, left:left, right:right }; }
+    / additive
+
+additive_op = "+" / "-"
+
+additive
+  = left:multiplicative ws op:additive_op ws right:additive 
+    { return { tag:op, left:left, right:right }; }
+  / multiplicative
+
+mult_op = "*" / "/"
+
+multiplicative
+  = left:primary ws op:mult_op ws right:multiplicative 
+    { return { tag:op, left:left, right:right }; }
+  / primary
+
+primary
+  = number
+  / v:identifier "(" ws ")"
+    { return { tag:"call", name:v, args:[] }; }
+  / v:identifier "(" ws args:arglist ws ")"
+    { return { tag:"call", name:v, args:args }; }
+  / v:identifier
+    { return { tag:'ident', name:v }; }
+  / "(" ws expr:expression ws ")" 
+    { return expr; }
+
+comma_expression 
+  = "," ws expr:expression
+    { return expr; }
+
+arglist
+  = first:expression rest:comma_expression*
+    { return [first].concat(rest); }
+
+integer
+  = digits:[0-9]+ { return digits.join(""); }
+
+number
+  = minus:"-"? base:integer frac:number_frac?
+    { return parseFloat(minus + base + frac); }
+
+number_frac
+  = "." num:integer
+    { return "." + num; }
+
+validfirstchar
+  = [A-Za-z_]
+
+validchar
+  = [A-Za-z0-9_]
+
+identifier
+  = firstchar:validfirstchar chars:validchar*
+    { return firstchar + chars.join(""); }
+
+ws = [ \t\n]*
