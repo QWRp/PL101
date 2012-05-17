@@ -18,8 +18,17 @@ Turtle.prototype = {
         this.y = this.originy;
         this.angle = 90;
         this.pen = true;
-        this.stroke_width = 4;
-        this.stroke_color = "#f00";
+
+        this.stroke = {
+            'stroke-width' : 4,
+            'stroke' : "#f00",
+            'stroke-opacity' : 1.0,
+            'stroke-linecap' : 'round',
+            'stroke-linejoin' : 'round'
+        };
+
+        this.states_stack = [];
+        this.scale = 1;
 
         this.turtleimg = this.paper.image(
             "http://nathansuniversity.com/gfx/turtle2.png",
@@ -43,15 +52,15 @@ Turtle.prototype = {
     drawTo: function (x, y) {
         "use strict";
 
-        var x1 = this.x, y1 = this.y, params = { 'stroke-width': this.stroke_width, 'stroke': this.stroke_color },
-            path = this.paper.path(Raphael.format("M{0},{1}L{2},{3}", x1, y1, x, y)).attr(params);
+        var x1 = this.x, y1 = this.y,
+            path = this.paper.path(Raphael.format("M{0},{1}L{2},{3}", x1, y1, x, y)).attr(this.stroke);
     },
 
     forward: function (d) {
         "use strict";
 
-        var newx = this.x + Math.cos(Raphael.rad(this.angle)) * d,
-            newy = this.y - Math.sin(Raphael.rad(this.angle)) * d;
+        var newx = this.x + Math.cos(Raphael.rad(this.angle)) * d * this.scale,
+            newy = this.y - Math.sin(Raphael.rad(this.angle)) * d * this.scale;
 
         if (this.pen) {
             this.drawTo(newx, newy);
@@ -68,6 +77,28 @@ Turtle.prototype = {
         this.angle -= ang;
         this.updateTurtle();
     },
+
+    push_state : function () {
+        this.states_stack.push({
+            stroke: this.stroke,
+            x : this.x,
+            y: this.y,
+            angle : this.angle,
+            scale: this.scale,
+            pen: this.pen
+        });
+    },
+
+    pop_state : function () {
+        var state = this.states_stack.pop();
+
+        this.stroke = state.stroke;
+        this.x = state.x;
+        this.y = state.y;
+        this.angle = state.angle;
+        this.scale = state.scale;
+        this.pen = state.pen;
+    }
 };
 
 function create_basic_environment(turtle) {
@@ -82,7 +113,12 @@ function create_basic_environment(turtle) {
         right: function (d) { turtle.right(d); },
         penup: function () { turtle.pen = false; },
         pendown: function () { turtle.pen = true; },
-        log: log_console
+        set_pen_color: function (d) { turtle.stroke.stroke = d; },
+        set_pen_width: function (d) { turtle.stroke['stroke-width'] = d; },
+        push: function () { turtle.push_state(); },
+        pop: function () { turtle.pop_state(); },
+        scale: function (d) { turtle.scale *= d; },
+        log: log_console || console.log
     };
 
     return { bindings: {}, outer: env };

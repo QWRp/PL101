@@ -37,9 +37,9 @@ function lookup(env, name) {
     throw "Variable '" + name + "' is not defined!";
 }
 
-function expand_bindings(env, in_func) {
+function expand_bindings(env, bindings, in_func) {
     "use strict";
-    return { bindings: {}, outer: env, in_function: in_func };
+    return { bindings: bindings, outer: env, in_function: in_func };
 }
 
 function evalExpr(expr, env) {
@@ -54,7 +54,7 @@ function evalExpr(expr, env) {
     case 'call':
         left = lookup(env, expr.name);
 
-        if (expr.args.length !== left.length) {
+        if (expr.args.length !== (left.tortoise_length || left.length)) {
             throw "Function '" + expr.name + "' expects " + left.length + " arguments, " + expr.args.length + " given.";
         }
 
@@ -171,9 +171,15 @@ function evalStatement(stmt, env) {
         } while (times);
         return val;
     case 'define':
-        val = eval("function " + stmt.name + "(" + stmt.args.join(",") + ") { var new_env = expand_bindings(env, true); " + stmt.args.map(function (arg) {
-            return "add_binding(new_env, '" + arg + "', " + arg + ");";
-        }).join("") + " return evalStatements(stmt.body, new_env);} " + stmt.name + ";");
+        val = function () {
+            var new_env, new_bindings = {}, i;
+            for (i = 0; i < stmt.args.length; i++) {
+                new_bindings[stmt.args[i]] = arguments[i];
+            }
+            new_env = expand_bindings(env, new_bindings, true);
+            return evalStatements(stmt.body, new_env);
+        };
+        val.tortoise_length = stmt.args.length;
         add_binding(env, stmt.name, val);
         return 0;
     case 'return':
