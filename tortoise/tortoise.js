@@ -134,10 +134,10 @@ function bind_math(env) {
     }
 }
 
-function create_basic_environment(turtle) {
+function create_basic_environment(turtle, turtle_canvas_id) {
     "use strict";
 
-    var env = { outer: null };
+    var env = { outer: null }, elem = $('#'+turtle_canvas_id);
     var default_turtle = turtle;
 
     env.bindings = {
@@ -147,15 +147,24 @@ function create_basic_environment(turtle) {
         right: function (d) { turtle.right(d); },
         pen_up: function () { turtle.state.pen = false; },
         pen_down: function () { turtle.state.pen = true; },
+        is_pen_down: function () { return turtle.state.pen; },
         set_pen_color: function (d) { turtle.state.stroke.stroke = d; },
         get_pen_color: function () { return turtle.state.stroke.color; },
         set_pen_width: function (d) { turtle.state.stroke['stroke-width'] = d; },
         get_pen_width: function () { return turtle.state.stroke['stroke-width']; },
+        set_pen_opacity: function (d) { turtle.state.stroke['stroke-opacity'] = d; },
+        get_pen_opacity: function () { return turtle.state.stroke['stroke-opacity']; },
+        get_paper_color: function () { return rgb2hex(elem.css('background-color')); },
+        set_paper_color: function (d) { elem.css('background-color', d); },
         push: function () { turtle.push_state(); },
         pop: function () { turtle.pop_state(); },
         scale: function (d) { turtle.state.scale *= d; },
         get_scale: function () { return turtle.state.scale; },
-        clear: function () { turtle.paper.clear(); turtle.clear(); },
+        clear: function () {
+            turtle.paper.clear();
+            this.set_paper_color('#ffffff');
+            turtle.clear();
+        },
         spawn_turtle: function () { return turtle.spawn_turtle(); },
         select_turtle: function (t) {
             if (!(t instanceof Turtle)) {
@@ -163,6 +172,7 @@ function create_basic_environment(turtle) {
             }
             turtle = t;
         },
+        home: function () { turtle.set_position(turtle.originx, turtle.originy); },
         set_heading: function (d) { turtle.set_heading(d); },
         get_heading: function () { return 90 - turtle.state.angle; },
         set_position: function (x, y) { turtle.set_position(x, y); },
@@ -176,4 +186,25 @@ function create_basic_environment(turtle) {
     bind_math(env);
 
     return { bindings: {}, outer: env };
+}
+
+//From http://stackoverflow.com/questions/1740700/get-hex-value-rather-than-rgb-value-using-jquery
+var hexDigits = new Array
+    ("0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f");
+
+//Function to convert hex format to a rgb color
+function rgb2hex(rgb) {
+    if (rgb[0] === '#') {
+        return rgb;
+    }
+    rgb = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+))?\)$/);
+    function hex(x) {
+        return ("0" + parseInt(x).toString(16)).slice(-2);
+    }
+    return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
+}
+
+
+function hex(x) {
+    return isNaN(x) ? "00" : hexDigits[(x - x % 16) / 16] + hexDigits[x % 16];
 }
