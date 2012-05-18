@@ -1,5 +1,6 @@
 start
-  = statements
+  = ws s:statements
+  { return s; }
 
 expression
   = expr:logic
@@ -21,6 +22,8 @@ statement
     { return { tag:"if", expr:e, body:body, else_body:else_body }; }
   / type:("repeat" / "while" / "if") ws "(" ws e:expression ws ")" ws "{" ws body:statements "}" ws
     { return { tag:type, expr:e, body:body }; }
+  / type:("repeat" / "while" / "if") ws "(" ws e:expression ws ")" ws s:statement ws
+    { return { tag:type, expr:e, body:[s] }; }
   / "return" ws ";" ws
     { return { tag:"return", expr:0 }; }
   / "return" ws e:expression ws ";" ws
@@ -128,4 +131,5 @@ identifier
   = firstchar:validfirstchar chars:validchar*
     { return firstchar + chars.join(""); }
 
-ws = [ \t\n]*
+comment = "//" [^\n\r]*
+ws = [ \n\r]* comment+ ws / [ \n\r]*

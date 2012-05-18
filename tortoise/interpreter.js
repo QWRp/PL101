@@ -46,6 +46,8 @@ function evalExpr(expr, env) {
     "use strict";
     if (typeof expr === "number") {
         return expr;
+    } else if (typeof expr === "string") {
+        return expr;
     }
 
     var left, right;
