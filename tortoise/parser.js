@@ -46,6 +46,7 @@ TORTOISE = (function(){
                 "variable": parse_variable,
                 "comma_variables": parse_comma_variables,
                 "vars_list": parse_vars_list,
+                "ternary": parse_ternary,
                 "logic_op": parse_logic_op,
                 "logic": parse_logic,
                 "comp_op": parse_comp_op,
@@ -155,7 +156,7 @@ TORTOISE = (function(){
                 var pos0;
 
                 pos0 = pos;
-                result0 = parse_logic();
+                result0 = parse_ternary();
                 if (result0 !== null) {
                     result0 = (function(offset, expr) { return expr; })(pos0, result0);
                 }
@@ -1424,6 +1425,101 @@ TORTOISE = (function(){
                 return result0;
             }
 
+            function parse_ternary() {
+                var result0, result1, result2, result3, result4, result5, result6, result7, result8, result9;
+                var pos0, pos1;
+
+                pos0 = pos;
+                pos1 = pos;
+                result0 = parse_logic();
+                if (result0 !== null) {
+                    result1 = parse_ws();
+                    if (result1 !== null) {
+                        if (input.charCodeAt(pos) === 63) {
+                            result2 = "?";
+                            pos++;
+                        } else {
+                            result2 = null;
+                            if (reportFailures === 0) {
+                                matchFailed("\"?\"");
+                            }
+                        }
+                        if (result2 !== null) {
+                            result3 = parse_ws();
+                            if (result3 !== null) {
+                                result4 = parse_expression();
+                                if (result4 !== null) {
+                                    result5 = parse_ws();
+                                    if (result5 !== null) {
+                                        if (input.charCodeAt(pos) === 58) {
+                                            result6 = ":";
+                                            pos++;
+                                        } else {
+                                            result6 = null;
+                                            if (reportFailures === 0) {
+                                                matchFailed("\":\"");
+                                            }
+                                        }
+                                        if (result6 !== null) {
+                                            result7 = parse_ws();
+                                            if (result7 !== null) {
+                                                result8 = parse_expression();
+                                                if (result8 !== null) {
+                                                    result9 = parse_ws();
+                                                    if (result9 !== null) {
+                                                        result0 = [result0, result1, result2, result3, result4, result5, result6, result7, result8, result9];
+                                                    } else {
+                                                        result0 = null;
+                                                        pos = pos1;
+                                                    }
+                                                } else {
+                                                    result0 = null;
+                                                    pos = pos1;
+                                                }
+                                            } else {
+                                                result0 = null;
+                                                pos = pos1;
+                                            }
+                                        } else {
+                                            result0 = null;
+                                            pos = pos1;
+                                        }
+                                    } else {
+                                        result0 = null;
+                                        pos = pos1;
+                                    }
+                                } else {
+                                    result0 = null;
+                                    pos = pos1;
+                                }
+                            } else {
+                                result0 = null;
+                                pos = pos1;
+                            }
+                        } else {
+                            result0 = null;
+                            pos = pos1;
+                        }
+                    } else {
+                        result0 = null;
+                        pos = pos1;
+                    }
+                } else {
+                    result0 = null;
+                    pos = pos1;
+                }
+                if (result0 !== null) {
+                    result0 = (function(offset, e, e1, e2) { return { tag:"?:", expr:e, left: e1, right: e2 }; })(pos0, result0[0], result0[4], result0[8]);
+                }
+                if (result0 === null) {
+                    pos = pos0;
+                }
+                if (result0 === null) {
+                    result0 = parse_logic();
+                }
+                return result0;
+            }
+
             function parse_logic_op() {
                 var result0;
 
@@ -2397,24 +2493,24 @@ TORTOISE = (function(){
 
                 pos0 = pos;
                 result0 = [];
-                if (/^[ \n\r]/.test(input.charAt(pos))) {
+                if (/^[ \n\r\t]/.test(input.charAt(pos))) {
                     result1 = input.charAt(pos);
                     pos++;
                 } else {
                     result1 = null;
                     if (reportFailures === 0) {
-                        matchFailed("[ \\n\\r]");
+                        matchFailed("[ \\n\\r\\t]");
                     }
                 }
                 while (result1 !== null) {
                     result0.push(result1);
-                    if (/^[ \n\r]/.test(input.charAt(pos))) {
+                    if (/^[ \n\r\t]/.test(input.charAt(pos))) {
                         result1 = input.charAt(pos);
                         pos++;
                     } else {
                         result1 = null;
                         if (reportFailures === 0) {
-                            matchFailed("[ \\n\\r]");
+                            matchFailed("[ \\n\\r\\t]");
                         }
                     }
                 }
@@ -2447,24 +2543,24 @@ TORTOISE = (function(){
                 }
                 if (result0 === null) {
                     result0 = [];
-                    if (/^[ \n\r]/.test(input.charAt(pos))) {
+                    if (/^[ \n\r\t]/.test(input.charAt(pos))) {
                         result1 = input.charAt(pos);
                         pos++;
                     } else {
                         result1 = null;
                         if (reportFailures === 0) {
-                            matchFailed("[ \\n\\r]");
+                            matchFailed("[ \\n\\r\\t]");
                         }
                     }
                     while (result1 !== null) {
                         result0.push(result1);
-                        if (/^[ \n\r]/.test(input.charAt(pos))) {
+                        if (/^[ \n\r\t]/.test(input.charAt(pos))) {
                             result1 = input.charAt(pos);
                             pos++;
                         } else {
                             result1 = null;
                             if (reportFailures === 0) {
-                                matchFailed("[ \\n\\r]");
+                                matchFailed("[ \\n\\r\\t]");
                             }
                         }
                     }

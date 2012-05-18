@@ -3,7 +3,7 @@ start
   { return s; }
 
 expression
-  = expr:logic
+  = expr:ternary
     { return expr; }
 
 statements
@@ -52,6 +52,11 @@ comma_variables
 vars_list
   = first:variable rest:comma_variables*
     { return [first].concat(rest); }
+
+ternary =
+   e:logic ws "?" ws e1:expression ws ":" ws e2:expression ws
+   { return { tag:"?:", expr:e, left: e1, right: e2 }; } 
+/ logic 
 
 logic_op = "&&" / "||"
 
@@ -132,4 +137,4 @@ identifier
     { return firstchar + chars.join(""); }
 
 comment = "//" [^\n\r]*
-ws = [ \n\r]* comment+ ws / [ \n\r]*
+ws = [ \n\r\t]* comment+ ws / [ \n\r\t]*

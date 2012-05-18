@@ -81,10 +81,26 @@ Turtle.prototype = {
         this.updateTurtle();
     },
 
+    set_position: function (x, y) {
+        "use strict";
+
+        this.state.x = x;
+        this.state.y = y;
+
+        this.updateTurtle();
+    },
+
     right: function (ang) {
         "use strict";
 
         this.state.angle -= ang;
+        this.updateTurtle();
+    },
+
+    set_heading: function(heading) {
+        "use strict";
+
+        this.state.angle = 90 - heading;
         this.updateTurtle();
     },
 
@@ -132,11 +148,14 @@ function create_basic_environment(turtle) {
         pen_up: function () { turtle.state.pen = false; },
         pen_down: function () { turtle.state.pen = true; },
         set_pen_color: function (d) { turtle.state.stroke.stroke = d; },
+        get_pen_color: function () { return turtle.state.stroke.color; },
         set_pen_width: function (d) { turtle.state.stroke['stroke-width'] = d; },
+        get_pen_width: function () { return turtle.state.stroke['stroke-width']; },
         push: function () { turtle.push_state(); },
         pop: function () { turtle.pop_state(); },
         scale: function (d) { turtle.state.scale *= d; },
-        reset: function () { turtle.paper.clear(); turtle.clear(); },
+        get_scale: function () { return turtle.state.scale; },
+        clear: function () { turtle.paper.clear(); turtle.clear(); },
         spawn_turtle: function () { return turtle.spawn_turtle(); },
         select_turtle: function (t) {
             if (!(t instanceof Turtle)) {
@@ -144,6 +163,11 @@ function create_basic_environment(turtle) {
             }
             turtle = t;
         },
+        set_heading: function (d) { turtle.set_heading(d); },
+        get_heading: function () { return 90 - turtle.state.angle; },
+        set_position: function (x, y) { turtle.set_position(x, y); },
+        get_position_x: function () { return turtle.state.x; },
+        get_position_y: function () { return turtle.state.y; },
         current_turtle: turtle,
         default_turtle: default_turtle,
         log_msg: log_console || console.log
