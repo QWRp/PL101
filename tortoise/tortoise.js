@@ -167,7 +167,7 @@ function create_basic_environment(turtle, turtle_canvas_id) {
         },
         spawn_turtle: function () {
             var t =  turtle.spawn_turtle();
-            this.select_turtle(t);
+            env.bindings.select_turtle(t);
             return t;
         },
         select_turtle: function (t) {
