@@ -87,6 +87,8 @@ function evalExpr(expr, env) {
         return evalExpr(expr.left, env) * evalExpr(expr.right, env);
     case '/':
         return evalExpr(expr.left, env) / evalExpr(expr.right, env);
+    case '%':
+        return evalExpr(expr.left, env) % evalExpr(expr.right, env);
     /* Logic operators */
     case '&&':
         return evalExpr(expr.left, env) && evalExpr(expr.right, env);
