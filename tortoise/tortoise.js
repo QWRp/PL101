@@ -184,7 +184,7 @@ function create_basic_environment(turtle, turtle_canvas_id) {
         get_position_y: function () { return turtle.state.y; },
         current_turtle: turtle,
         default_turtle: default_turtle,
-        log_msg: log_console || console.log
+        log_console: log_console || console.log
     };
 
     bind_math(env);
