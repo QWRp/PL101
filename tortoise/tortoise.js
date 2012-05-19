@@ -165,7 +165,11 @@ function create_basic_environment(turtle, turtle_canvas_id) {
             this.set_paper_color('#ffffff');
             turtle.clear();
         },
-        spawn_turtle: function () { return turtle.spawn_turtle(); },
+        spawn_turtle: function () {
+            var t =  turtle.spawn_turtle();
+            this.select_turtle(t);
+            return t;
+        },
         select_turtle: function (t) {
             if (!(t instanceof Turtle)) {
                 throw "Function 'select_turtle' expects turtle variable!";
